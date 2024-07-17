@@ -12,3 +12,12 @@ class Book(Base):
     year = Column(Integer, index=True)
     is_published = Column(Boolean, index=True)
 
+class Info(Base):
+    __tablename__ = 'Info'
+
+    firstname = Column(String, index=True)
+    surname = Column(String, index=True)
+    id = Column(String, primary_key=True, index=True)
+    birth = Column(String, index=True)
+    gender = Column(String, index=True)
+

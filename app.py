@@ -4,8 +4,6 @@ load_dotenv()
 from fastapi import FastAPI, Depends, Response, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-
-# Import models
 from database import SessionLocal, engine
 import models
 
@@ -29,35 +27,58 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# https://fastapi.tiangolo.com/tutorial/sql-databases/#crud-utils
 
-@router_v1.get('/books')
-async def get_books(db: Session = Depends(get_db)):
-    return db.query(models.Book).all()
+@router_v1.get('/info')
+async def get_info(db: Session = Depends(get_db)):
+    return db.query(models.Info).all()
 
-@router_v1.get('/books/{book_id}')
-async def get_book(book_id: int, db: Session = Depends(get_db)):
-    return db.query(models.Book).filter(models.Book.id == book_id).first()
 
-@router_v1.post('/books')
-async def create_book(book: dict, response: Response, db: Session = Depends(get_db)):
+@router_v1.post('/info')
+async def create_Info(Info: dict, response: Response, db: Session = Depends(get_db)):
     # TODO: Add validation
-    newbook = models.Book(title=book['title'], author=book['author'], year=book['year'], is_published=book['is_published'])
-    db.add(newbook)
+    newInfo = models.Info( firstname=Info['firstname'], surname=Info['surname'], id=Info['id'], birth=Info['birth'], gender=Info['gender'])
+    db.add(newInfo)
     db.commit()
-    db.refresh(newbook)
+    db.refresh(newInfo)
     response.status_code = 201
-    return newbook
+    return newInfo
 
-# @router_v1.patch('/books/{book_id}')
-# async def update_book(book_id: int, book: dict, db: Session = Depends(get_db)):
-#     pass
+@router_v1.put('/info/{info_id}')
+async def update_Info(info_id: str, Info: dict, response: Response, db: Session = Depends(get_db)):
 
-# @router_v1.delete('/books/{book_id}')
-# async def delete_book(book_id: int, db: Session = Depends(get_db)):
-#     pass
+    modify = db.query(models.Info).filter(models.Info.id == info_id).first()
+    if modify is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    modify.firstname = Info.get('firstname', modify.firstname)
+    modify.surname = Info.get('surname', modify.surname)
+    modify.birth = Info.get('birth', modify.birth)
+    modify.gender = Info.get('gender', modify.gender)
+
+    db.commit()
+    db.refresh(modify)
+    response.status_code = 200
+    return modify
+
+
+
+@router_v1.delete('/info/{info_id}')
+async def delete_Info(info_id: str, response: Response, db: Session = Depends(get_db)):
+
+    delete_Info = db.query(models.Info).filter(models.Info.id == info_id).first()
+    if delete_Info is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+
+    db.delete(delete_Info)
+    db.commit()
+
+    response.status_code = 200
+    return {"detail": "Student deleted successfully"}
+
 
 app.include_router(router_v1)
+
 
 if __name__ == '__main__':
     import uvicorn
